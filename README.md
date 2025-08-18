@@ -1,4 +1,4 @@
-<h1 align="center">🌌 PlantShelf</h1>
+<h1 align="center">🪻​ PlantShelf</h1>
 
 <p align="center">
   <b>Une application pour répertorier ses plantes et en prendre soin</b><br>
