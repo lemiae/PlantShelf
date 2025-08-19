@@ -10,7 +10,7 @@
 ## 🌱​ Aperçu de l'application
 
 <p align="center">
-  <img src="plantshelf/main/static/main/images/Capture_projet.png" alt="PlantShelf Screenshot" width="600"/>
+  <img src="plantshelf/main/static/main/images/Capture_projet_v2.png" alt="PlantShelf Screenshot" width="600"/>
 </p>
 
 ---
