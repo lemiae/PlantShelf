@@ -1,0 +1,76 @@
+<!-- templates/plantes/supprimer_piece.html -->
+{% extends 'base.html' %}
+
+{% block title %}Supprimer {{ piece.nom }} - PlantApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-trash me-2"></i>Supprimer "{{ piece.nom }}"
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Attention !</strong> Cette action est irréversible.
+                </div>
+                
+                <p>Vous êtes sur le point de supprimer définitivement la pièce <strong>"{{ piece.nom }}"</strong>.</p>
+                
+                {% if piece.nombre_plantes > 0 %}
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-exclamation-circle me-2"></i>Impact sur vos plantes
+                    </h6>
+                    <p class="mb-0">
+                        Cette pièce contient <strong>{{ piece.nombre_plantes }} plante{{ piece.nombre_plantes|pluralize }}</strong>. 
+                        Elles seront également supprimées de votre collection.
+                    </p>
+                </div>
+                
+                <h6>Plantes qui seront supprimées :</h6>
+                <ul class="list-group mb-3">
+                    {% for plante in piece.plantes.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-seedling me-2 text-success"></i>
+                            <strong>{{ plante.nom_affiche }}</strong>
+                            <small class="text-muted">({{ plante.espece.nom_commun }})</small>
+                        </div>
+                        <span class="badge bg-secondary">
+                            Étagère {{ plante.etagere_numero }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                <div class="border p-3 bg-light mb-3">
+                    <h6>Récapitulatif :</h6>
+                    <ul class="mb-0">
+                        <li><strong>Pièce :</strong> {{ piece.nom }} ({{ piece.get_exposition_display }})</li>
+                        <li><strong>Étagères :</strong> {{ piece.nombre_etageres }}</li>
+                        <li><strong>Plantes :</strong> {{ piece.nombre_plantes }}</li>
+                        <li><strong>Créée le :</strong> {{ piece.created_at|date:"d/m/Y à H:i" }}</li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-danger flex-md-fill">
+                            <i class="fas fa-trash me-2"></i>Oui, supprimer définitivement
+                        </button>
+                        <a href="{% url 'mes_pieces' %}" class="btn btn-outline-secondary flex-md-fill">
+                            <i class="fas fa-arrow-left me-2"></i>Non, revenir aux pièces
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

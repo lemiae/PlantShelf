@@ -1,8 +1,7 @@
-
 <!-- templates/plantes/mes_pieces.html -->
 {% extends 'base.html' %}
 
-{% block title %}Mes Pièces - PlantShelf{% endblock %}
+{% block title %}Mes Pièces - PlantApp{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -60,13 +59,52 @@
                 
                 <div class="row text-center mb-3">
                     <div class="col-4">
+                        <div class="border-end">
+                            <strong class="d-block text-success">{{ item.nombre_plantes }}</strong>
+                            <small class="text-muted">Plantes</small>
+                        </div>
                     </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <strong class="d-block {% if item.plantes_a_arroser > 0 %}text-warning{% else %}text-muted{% endif %}">
+                                {{ item.plantes_a_arroser }}
+                            </strong>
+                            <small class="text-muted">À arroser</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <strong class="d-block text-muted">{{ piece.created_at|date:"d/m" }}</strong>
+                        <small class="text-muted">Créée</small>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <a href="{% url 'bibliotheque_piece' piece.id %}" class="btn btn-plant">
+                        <i class="fas fa-book-open me-2"></i>Voir la bibliothèque
+                    </a>
                 </div>
             </div>
         </div>
     </div>
     {% endwith %}
     {% endfor %}
+</div>
+{% else %}
+<!-- État vide -->
+<div class="row">
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-home text-muted mb-4" style="font-size: 5rem; opacity: 0.3;"></i>
+            <h3 class="text-muted mb-3">Aucune pièce créée</h3>
+            <p class="text-muted mb-4">
+                Commencez par créer votre première pièce pour organiser vos plantes !<br>
+                Vous pourrez ensuite y ajouter des étagères et y placer vos plantes.
+            </p>
+            <a href="{% url 'creer_piece' %}" class="btn btn-plant btn-lg">
+                <i class="fas fa-plus me-2"></i>Créer ma première pièce
+            </a>
+        </div>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

@@ -1,0 +1,112 @@
+<!-- templates/plantes/creer_piece.html -->
+{% extends 'base.html' %}
+
+{% block title %}Créer une pièce - PlantApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h3 class="mb-0" style="color: var(--plant-green);">
+                    <i class="fas fa-plus-circle me-2"></i>Créer une nouvelle pièce
+                </h3>
+                <p class="text-muted mb-0">Ajoutez une pièce à votre maison pour y organiser vos plantes</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.nom.id_for_label }}" class="form-label">
+                            <i class="fas fa-tag me-1"></i>{{ form.nom.label }}
+                        </label>
+                        {{ form.nom }}
+                        {% if form.nom.errors %}
+                            <div class="text-danger small mt-1">{{ form.nom.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.exposition.id_for_label }}" class="form-label">
+                            <i class="fas fa-compass me-1"></i>{{ form.exposition.label }}
+                        </label>
+                        {{ form.exposition }}
+                        <div class="form-text">{{ form.exposition.help_text }}</div>
+                        {% if form.exposition.errors %}
+                            <div class="text-danger small mt-1">{{ form.exposition.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.nombre_etageres.id_for_label }}" class="form-label">
+                            <i class="fas fa-layer-group me-1"></i>{{ form.nombre_etageres.label }}
+                        </label>
+                        {{ form.nombre_etageres }}
+                        <div class="form-text">{{ form.nombre_etageres.help_text }}</div>
+                        {% if form.nombre_etageres.errors %}
+                            <div class="text-danger small mt-1">{{ form.nombre_etageres.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="fas fa-align-left me-1"></i>{{ form.description.label }}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button type="submit" class="btn btn-plant flex-md-fill">
+                            <i class="fas fa-save me-2"></i>Créer la pièce
+                        </button>
+                        <a href="{% url 'mes_pieces' %}" class="btn btn-outline-secondary flex-md-fill">
+                            <i class="fas fa-times me-2"></i>Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aperçu des expositions -->
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Guide des expositions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 col-md-3 mb-3">
+                        <i class="fas fa-sun text-warning mb-2" style="font-size: 1.5rem;"></i>
+                        <h6>Sud</h6>
+                        <small class="text-muted">Lumière intense</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <i class="fas fa-cloud-sun text-info mb-2" style="font-size: 1.5rem;"></i>
+                        <h6>Est/Ouest</h6>
+                        <small class="text-muted">Lumière modérée</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <i class="fas fa-cloud text-secondary mb-2" style="font-size: 1.5rem;"></i>
+                        <h6>Nord</h6>
+                        <small class="text-muted">Lumière douce</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <i class="fas fa-adjust text-primary mb-2" style="font-size: 1.5rem;"></i>
+                        <h6>Combinées</h6>
+                        <small class="text-muted">Exposition mixte</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,271 @@
+<!-- templates/plantes/bibliotheque_piece.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ piece.nom }} - Bibliothèque{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="display-6 fw-bold" style="color: var(--plant-green);">
+            <i class="fas fa-book-open me-3"></i>{{ piece.nom }}
+        </h1>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-secondary fs-6">
+                <i class="fas fa-compass me-1"></i>{{ piece.get_exposition_display }}
+            </span>
+            <span class="text-muted">
+                {{ total_plantes }} plante{{ total_plantes|pluralize }} • {{ piece.nombre_etageres }} étagère{{ piece.nombre_etageres|pluralize }}
+            </span>
+            {% if plantes_a_arroser %}
+            <span class="badge bg-warning text-dark">
+                <i class="fas fa-tint me-1"></i>{{ plantes_a_arroser|length }} à arroser
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="fas fa-cog me-1"></i>Actions
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">
+                <i class="fas fa-plus me-2"></i>Ajouter une plante
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'modifier_piece' piece.id %}">
+                <i class="fas fa-edit me-2"></i>Modifier la pièce
+            </a></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'supprimer_piece' piece.id %}">
+                <i class="fas fa-trash me-2"></i>Supprimer la pièce
+            </a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Description de la pièce -->
+{% if piece.description %}
+<div class="alert alert-info mb-4">
+    <i class="fas fa-info-circle me-2"></i>{{ piece.description }}
+</div>
+{% endif %}
+
+<!-- Bibliothèque avec étagères -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="bibliotheque-container" style="position: relative; background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%); min-height: 500px; border-radius: 10px;">
+            {% if total_plantes > 0 %}
+                <!-- Étagères avec plantes -->
+                {% for etagere_num, plantes_etagere in plantes_par_etagere.items %}
+                <div class="etagere etagere-{{ etagere_num }}" style="
+                    position: absolute;
+                    width: 85%;
+                    height: 20px;
+                    left: 7.5%;
+                    background: linear-gradient(to bottom, #8B4513, #A0522D);
+                    border-radius: 10px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                "></div>
+                
+                <!-- Plantes sur cette étagère -->
+                {% for plante in plantes_etagere %}
+                <div class="plante-item plante-etagere-{{ etagere_num }}" 
+                     data-position="{{ plante.position_x }}"
+                     style="position: absolute; cursor: pointer;" 
+                     title="{{ plante.nom_affiche }} - {{ plante.espece.nom_commun }}">
+                    <!-- Pot -->
+                    <div class="pot" style="
+                        width: 40px;
+                        height: 30px;
+                        background: {{ plante.espece.couleur_pot }};
+                        border-radius: 0 0 20px 20px;
+                        position: relative;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    ">
+                        <!-- Plante -->
+                        <div style="
+                            position: absolute;
+                            top: -15px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            color: #2e7d32;
+                            font-size: 20px;
+                        ">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        
+                        <!-- Indicateur d'arrosage -->
+                        {% if plante.a_besoin_arrosage %}
+                        <div style="
+                            position: absolute;
+                            top: -25px;
+                            right: -5px;
+                            background: #ffc107;
+                            color: white;
+                            border-radius: 50%;
+                            width: 15px;
+                            height: 15px;
+                            font-size: 8px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Nom de la plante -->
+                    <div style="
+                        position: absolute;
+                        top: 35px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        white-space: nowrap;
+                        font-size: 10px;
+                        background: rgba(255,255,255,0.8);
+                        padding: 2px 4px;
+                        border-radius: 3px;
+                        max-width: 80px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">
+                        {{ plante.nom_affiche|truncatechars:12 }}
+                    </div>
+                </div>
+                {% endfor %}
+                {% endfor %}
+            {% else %}
+                <!-- État vide -->
+                <div class="text-center py-5">
+                    <i class="fas fa-seedling text-muted mb-3" style="font-size: 4rem; opacity: 0.3;"></i>
+                    <h4 class="text-muted mb-3">Bibliothèque vide</h4>
+                    <p class="text-muted mb-4">
+                        Cette pièce ne contient encore aucune plante.<br>
+                        Commencez par ajouter votre première plante !
+                    </p>
+                    <button class="btn btn-plant">
+                        <i class="fas fa-plus me-2"></i>Ajouter ma première plante
+                    </button>
+                </div>
+                
+                <!-- Affichage des étagères vides pour pièce vide -->
+                <div class="etagere-vide etagere-1" style="
+                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 80px;
+                    background: linear-gradient(to bottom, #8B4513, #A0522D);
+                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.5;
+                "></div>
+                {% if piece.nombre_etageres >= 2 %}
+                <div class="etagere-vide etagere-2" style="
+                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 160px;
+                    background: linear-gradient(to bottom, #8B4513, #A0522D);
+                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.5;
+                "></div>
+                {% endif %}
+                {% if piece.nombre_etageres >= 3 %}
+                <div class="etagere-vide etagere-3" style="
+                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 240px;
+                    background: linear-gradient(to bottom, #8B4513, #A0522D);
+                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.5;
+                "></div>
+                {% endif %}
+                {% if piece.nombre_etageres >= 4 %}
+                <div class="etagere-vide etagere-4" style="
+                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 320px;
+                    background: linear-gradient(to bottom, #8B4513, #A0522D);
+                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.5;
+                "></div>
+                {% endif %}
+                {% if piece.nombre_etageres >= 5 %}
+                <div class="etagere-vide etagere-5" style="
+                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 400px;
+                    background: linear-gradient(to bottom, #8B4513, #A0522D);
+                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.5;
+                "></div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Positionnement fixe des étagères */
+.etagere-1, .plante-etagere-1 { 
+    top: 80px; 
+}
+.plante-etagere-1 { 
+    top: 40px; 
+}
+
+.etagere-2, .plante-etagere-2 { 
+    top: 160px; 
+}
+.plante-etagere-2 { 
+    top: 120px; 
+}
+
+.etagere-3, .plante-etagere-3 { 
+    top: 240px; 
+}
+.plante-etagere-3 { 
+    top: 200px; 
+}
+
+.etagere-4, .plante-etagere-4 { 
+    top: 320px; 
+}
+.plante-etagere-4 { 
+    top: 280px; 
+}
+
+.etagere-5, .plante-etagere-5 { 
+    top: 400px; 
+}
+.plante-etagere-5 { 
+    top: 360px; 
+}
+
+/* Positionnement horizontal des plantes */
+.plante-item[data-position="0"] { left: 100px; }
+.plante-item[data-position="1"] { left: 160px; }
+.plante-item[data-position="2"] { left: 220px; }
+.plante-item[data-position="3"] { left: 280px; }
+.plante-item[data-position="4"] { left: 340px; }
+.plante-item[data-position="5"] { left: 400px; }
+.plante-item[data-position="6"] { left: 460px; }
+.plante-item[data-position="7"] { left: 520px; }
+.plante-item[data-position="8"] { left: 580px; }
+.plante-item[data-position="9"] { left: 640px; }
+
+/* Effets hover */
+.plante-item:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s;
+    z-index: 10;
+}
+
+.etagere:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s;
+}
+</style>
+
+<!-- Navigation -->
+<div class="mt-4">
+    <a href="{% url 'mes_pieces' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Retour aux pièces
+    </a>
+</div>
+
+<style>
+.plante-item:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s;
+    z-index: 10;
+}
+
+.etagere:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s;
+}
+</style>
+{% endblock %}
