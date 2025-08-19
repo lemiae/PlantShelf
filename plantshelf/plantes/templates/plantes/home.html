@@ -1,0 +1,99 @@
+
+<!-- templates/plantes/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Accueil - PlantShelf{% endblock %}
+
+{% block content %}
+<div class="row align-items-center min-vh-75">
+    <div class="col-lg-6">
+        <div class="text-center text-lg-start">
+            <h1 class="display-4 fw-bold mb-4" style="color: var(--plant-green);">
+                <i class="fas fa-seedling me-3"></i>
+                Bienvenue sur PlantShelf
+            </h1>
+            <p class="lead mb-4 text-muted">
+                Organisez vos plantes par pièces, suivez leur entretien et ne ratez plus jamais un arrosage ! 
+                Créez votre bibliothèque végétale personnalisée.
+            </p>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'register' %}" class="btn btn-plant btn-lg px-4 me-md-2">
+                        <i class="fas fa-user-plus me-2"></i>Commencer gratuitement
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+                    </a>
+                {% else %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-plant btn-lg px-4 me-md-2">
+                        <i class="fas fa-tachometer-alt me-2"></i>Voir mon dashboard
+                    </a>
+                    <a href="{% url 'mes_pieces' %}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-home me-2"></i>Mes pièces
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="text-center">
+            <div class="position-relative">
+                <div class="bg-light-green rounded-circle d-inline-flex align-items-center justify-content-center" 
+                     style="width: 300px; height: 300px; background: linear-gradient(135deg, var(--light-green), #c8e6c9);">
+                    <i class="fas fa-home" style="font-size: 4rem; color: var(--plant-green);"></i>
+                    <i class="fas fa-seedling position-absolute" style="font-size: 2rem; color: #2e7d32; top: 20%; right: 25%;"></i>
+                    <i class="fas fa-leaf position-absolute" style="font-size: 1.5rem; color: #388e3c; bottom: 30%; left: 20%;"></i>
+                    <i class="fas fa-spa position-absolute" style="font-size: 1.5rem; color: #43a047; top: 40%; left: 15%;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fonctionnalités -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-5" style="color: var(--plant-green);">
+            <i class="fas fa-star me-2"></i>Fonctionnalités
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-home plant-icon" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title">Organisez par pièces</h5>
+                <p class="card-text">Créez vos pièces avec leur exposition et placez vos plantes sur des étagères virtuelles.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-bell plant-icon" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title">Rappels d'arrosage</h5>
+                <p class="card-text">Recevez des notifications personnalisées selon les besoins de chaque plante.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-book plant-icon" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="card-title">Bibliothèque complète</h5>
+                <p class="card-text">Base de données riche avec conseils d'entretien pour chaque espèce de plante.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

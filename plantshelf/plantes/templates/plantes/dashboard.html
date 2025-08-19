@@ -1,0 +1,163 @@
+<!-- templates/plantes/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - PlantShelf{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 fw-bold" style="color: var(--plant-green);">
+            <i class="fas fa-tachometer-alt me-3"></i>
+            Bonjour {{ user.username }} ! 🌿
+        </h1>
+        <p class="lead text-muted">Voici un aperçu de votre jardin d'intérieur</p>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-home plant-icon mb-2" style="font-size: 2rem;"></i>
+                <h4 class="fw-bold">{{ nombre_pieces }}</h4>
+                <p class="text-muted mb-0">Pièce{{ nombre_pieces|pluralize }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-seedling plant-icon mb-2" style="font-size: 2rem;"></i>
+                <h4 class="fw-bold">{{ total_plantes }}</h4>
+                <p class="text-muted mb-0">Plante{{ total_plantes|pluralize }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100 {% if plantes_a_arroser > 0 %}border-warning{% endif %}">
+            <div class="card-body">
+                <i class="fas fa-tint mb-2 {% if plantes_a_arroser > 0 %}text-warning{% else %}plant-icon{% endif %}" style="font-size: 2rem;"></i>
+                <h4 class="fw-bold {% if plantes_a_arroser > 0 %}text-warning{% endif %}">{{ plantes_a_arroser }}</h4>
+                <p class="text-muted mb-0">À arroser</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-calendar plant-icon mb-2" style="font-size: 2rem;"></i>
+                <h4 class="fw-bold">{{ user.date_joined|timesince|floatformat:0 }}</h4>
+                <p class="text-muted mb-0">Jours avec nous</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 style="color: var(--plant-green);">
+            <i class="fas fa-bolt me-2"></i>Actions rapides
+        </h3>
+    </div>
+    <div class="col-md-6 mb-3">
+        <a href="{% url 'creer_piece' %}" class="card text-decoration-none h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-plus-circle plant-icon mb-2" style="font-size: 2rem;"></i>
+                <h5 class="card-title">Créer une pièce</h5>
+                <p class="text-muted">Ajoutez une nouvelle pièce à votre maison</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 mb-3">
+        <a href="{% url 'mes_pieces' %}" class="card text-decoration-none h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-eye plant-icon mb-2" style="font-size: 2rem;"></i>
+                <h5 class="card-title">Voir mes pièces</h5>
+                <p class="text-muted">Gérez vos pièces et leurs plantes</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Notifications urgentes -->
+{% if notifications_urgentes %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <h5 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Plantes à arroser aujourd'hui
+            </h5>
+            <div class="row">
+                {% for plante in notifications_urgentes %}
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-seedling me-2"></i>
+                        <strong>{{ plante.nom_affiche }}</strong>
+                        <span class="text-muted ms-2">({{ plante.piece.nom }})</span>
+                        <span class="badge bg-warning text-dark ms-auto">
+                            {{ plante.jours_depuis_arrosage }} jour{{ plante.jours_depuis_arrosage|pluralize }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Mes pièces récentes -->
+{% if pieces %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <h3 style="color: var(--plant-green);">
+            <i class="fas fa-home me-2"></i>Mes pièces
+        </h3>
+    </div>
+    {% for piece in pieces %}
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'bibliotheque_piece' piece.id %}" class="card text-decoration-none h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ piece.nom }}</h5>
+                    <span class="badge bg-secondary">{{ piece.exposition|capfirst }}</span>
+                </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <strong class="d-block">{{ piece.nombre_plantes }}</strong>
+                            <small class="text-muted">Plantes</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <strong class="d-block">{{ piece.nombre_etageres }}</strong>
+                        <small class="text-muted">Étagères</small>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-home text-muted mb-3" style="font-size: 4rem;"></i>
+            <h4 class="text-muted">Aucune pièce créée</h4>
+            <p class="text-muted">Commencez par créer votre première pièce !</p>
+            <a href="{% url 'creer_piece' %}" class="btn btn-plant">
+                <i class="fas fa-plus me-2"></i>Créer ma première pièce
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

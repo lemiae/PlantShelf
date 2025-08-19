@@ -1,0 +1,72 @@
+
+<!-- templates/plantes/mes_pieces.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mes Pièces - PlantShelf{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="display-5 fw-bold" style="color: var(--plant-green);">
+            <i class="fas fa-home me-3"></i>Mes Pièces
+        </h1>
+        <p class="text-muted">Gérez l'organisation de votre maison</p>
+    </div>
+    <a href="{% url 'creer_piece' %}" class="btn btn-plant">
+        <i class="fas fa-plus me-2"></i>Nouvelle pièce
+    </a>
+</div>
+
+{% if pieces_avec_stats %}
+<div class="row">
+    {% for item in pieces_avec_stats %}
+    {% with piece=item.piece %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title mb-0">{{ piece.nom }}</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'modifier_piece' piece.id %}">
+                                    <i class="fas fa-edit me-2"></i>Modifier
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'supprimer_piece' piece.id %}">
+                                    <i class="fas fa-trash me-2"></i>Supprimer
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-secondary me-2">
+                        <i class="fas fa-compass me-1"></i>{{ piece.get_exposition_display }}
+                    </span>
+                    <span class="badge bg-light text-dark">
+                        <i class="fas fa-layer-group me-1"></i>{{ piece.nombre_etageres }} étagères
+                    </span>
+                </div>
+                
+                {% if piece.description %}
+                <p class="text-muted small">{{ piece.description|truncatechars:100 }}</p>
+                {% endif %}
+                
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
