@@ -7,6 +7,10 @@ from django.contrib import messages
 from django.http import JsonResponse
 from .models import Piece, EspecePlante, PlantePossedee
 from .forms import PieceForm
+from django.views.decorators.http import require_http_methods
+from .forms import AjouterPlanteForm, CreerEspeceForm
+from .services.perenual_service import perenual_service
+import json
 
 
 def home(request):
@@ -145,3 +149,140 @@ def bibliotheque_piece(request, piece_id):
     }
     
     return render(request, 'plantes/bibliotheque_piece.html', context)
+
+@login_required
+@require_http_methods(["GET"])
+def api_rechercher_plantes(request):
+    """API endpoint pour l'autocomplete de recherche de plantes"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Chercher d'abord dans notre base locale
+    especes_locales = EspecePlante.objects.filter(
+        nom_commun__icontains=query
+    )[:5]
+    
+    results = []
+    
+    # Ajouter les espèces locales
+    for espece in especes_locales:
+        results.append({
+            'id': f'local_{espece.id}',
+            'text': espece.nom_commun,
+            'scientific_name': espece.nom_scientifique or '',
+            'source': 'local',
+            'frequence_arrosage': espece.frequence_arrosage_jours,
+            'exposition': espece.get_exposition_preferee_display()
+        })
+    
+    # Chercher dans l'API Perenual si on n'a pas assez de résultats
+    if len(results) < 10:
+        try:
+            api_results = perenual_service.search_plants(query, limit=10)
+            
+            for plant in api_results:
+                if len(results) >= 15:  # Limite totale
+                    break
+                    
+                results.append({
+                    'id': f'api_{plant["id"]}',
+                    'text': plant.get('common_name', ''),
+                    'scientific_name': plant.get('scientific_name', [None])[0] if plant.get('scientific_name') else '',
+                    'source': 'api',
+                    'image': plant.get('default_image', {}).get('thumbnail') if plant.get('default_image') else None
+                })
+        except Exception as e:
+            # En cas d'erreur API, continuer avec les résultats locaux
+            pass
+    
+    return JsonResponse({'results': results})
+
+
+@login_required
+def ajouter_plante(request, piece_id=None):
+    """Vue pour ajouter une plante à une pièce"""
+    piece = None
+    if piece_id:
+        piece = get_object_or_404(Piece, id=piece_id, user=request.user)
+    
+    if request.method == 'POST':
+        form = AjouterPlanteForm(request.user, request.POST)
+        
+        if form.is_valid():
+            # Récupérer ou créer l'espèce
+            espece = None
+            recherche_espece = request.POST.get('recherche_espece', '').strip()
+            espece_selectionnee = request.POST.get('espece_selectionnee', '').strip()
+            
+            if espece_selectionnee:
+                # Traiter la sélection d'espèce
+                if espece_selectionnee.startswith('local_'):
+                    # Espèce existante dans notre base
+                    espece_id = int(espece_selectionnee.replace('local_', ''))
+                    espece = get_object_or_404(EspecePlante, id=espece_id)
+                    
+                elif espece_selectionnee.startswith('api_'):
+                    # Nouvelle espèce depuis l'API Perenual
+                    perenual_id = int(espece_selectionnee.replace('api_', ''))
+                    
+                    # Vérifier si on l'a déjà en base
+                    espece = EspecePlante.objects.filter(perenual_id=perenual_id).first()
+                    
+                    if not espece:
+                        # Créer la nouvelle espèce depuis l'API
+                        try:
+                            plant_data = perenual_service.get_plant_details(perenual_id)
+                            if plant_data:
+                                espece_data = perenual_service.format_plant_for_model(plant_data)
+                                if espece_data:
+                                    espece = EspecePlante.objects.create(**espece_data)
+                        except Exception as e:
+                            messages.error(request, f"Erreur lors de la récupération des données: {e}")
+                            return render(request, 'plantes/ajouter_plante.html', {
+                                'form': form, 
+                                'piece': piece
+                            })
+            
+            if not espece:
+                messages.error(request, "Veuillez sélectionner une espèce valide.")
+                return render(request, 'plantes/ajouter_plante.html', {
+                    'form': form, 
+                    'piece': piece
+                })
+            
+            # Créer la plante possédée
+            plante = form.save(commit=False)
+            plante.user = request.user
+            plante.espece = espece
+            plante.save()
+            
+            messages.success(request, f"Plante '{plante.nom_affiche}' ajoutée avec succès!")
+            return redirect('bibliotheque_piece', piece_id=plante.piece.id)
+    
+    else:
+        initial_data = {}
+        if piece:
+            initial_data['piece'] = piece
+        form = AjouterPlanteForm(request.user, initial=initial_data)
+    
+    return render(request, 'plantes/ajouter_plante.html', {
+        'form': form,
+        'piece': piece
+    })
+
+
+@login_required
+def creer_espece_manuelle(request):
+    """Vue pour créer une espèce manuellement"""
+    if request.method == 'POST':
+        form = CreerEspeceForm(request.POST)
+        if form.is_valid():
+            espece = form.save()
+            messages.success(request, f"Espèce '{espece.nom_commun}' créée avec succès!")
+            return redirect('ajouter_plante')
+    else:
+        form = CreerEspeceForm()
+    
+    return render(request, 'plantes/creer_espece.html', {'form': form})

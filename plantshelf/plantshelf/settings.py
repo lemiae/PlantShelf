@@ -137,3 +137,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Redirection après login
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+
+PERENUAL_API_KEY = 'sk-0dOt68a5867f4e62a11931'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

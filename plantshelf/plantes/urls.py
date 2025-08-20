@@ -23,4 +23,8 @@ urlpatterns = [
     
     # Bibliothèque par pièce
     path('pieces/<int:piece_id>/bibliotheque/', views.bibliotheque_piece, name='bibliotheque_piece'),
+
+    # Gestion des plantes
+    path('plantes/', views.creer_espece_manuelle, name='creer_espece'),
+    path('plantes/ajouter/', views.ajouter_plante, name='ajouter_plantes'),
 ]
