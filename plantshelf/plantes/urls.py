@@ -26,5 +26,9 @@ urlpatterns = [
 
     # Gestion des plantes
     path('plantes/', views.creer_espece_manuelle, name='creer_espece'),
-    path('plantes/ajouter/', views.ajouter_plante, name='ajouter_plantes'),
+    #path('plantes/ajouter/', views.ajouter_plante, name='ajouter_plantes'),
+    path('ajouter-plante/', views.ajouter_plante, name='ajouter_plante'),
+    path('ajouter-plante/<int:piece_id>/', views.ajouter_plante, name='ajouter_plante'),
+    path('api/rechercher-plantes/', views.api_rechercher_plantes, name='api_rechercher_plantes'),
+    path('creer-espece/', views.creer_espece_manuelle, name='creer_espece_manuelle'),
 ]

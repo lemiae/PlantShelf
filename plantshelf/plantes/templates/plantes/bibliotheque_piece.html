@@ -28,7 +28,7 @@
             <i class="fas fa-cog me-1"></i>Actions
         </button>
         <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">
+            <li><a class="dropdown-item" href="{% url 'ajouter_plante' piece.id %}">
                 <i class="fas fa-plus me-2"></i>Ajouter une plante
             </a></li>
             <li><hr class="dropdown-divider"></li>
@@ -144,7 +144,7 @@
                         Commencez par ajouter votre première plante !
                     </p>
                     <button class="btn btn-plant">
-                        <i class="fas fa-plus me-2"></i>Ajouter ma première plante
+                        <a href="{% url 'ajouter_plante' piece.id %}"><i class="fas fa-plus me-2"></i>Ajouter ma première plante</a>
                     </button>
                 </div>
                 
@@ -185,6 +185,14 @@
             {% endif %}
         </div>
     </div>
+</div>
+
+<div class="position-fixed" style="bottom: 20px; right: 20px; z-index: 1000;">
+    <a href="{% url 'ajouter_plante' piece.id %}" 
+       class="btn btn-success btn-lg rounded-circle shadow"
+       title="Ajouter une plante">
+        <i class="fas fa-plus"></i>
+    </a>
 </div>
 
 <style>

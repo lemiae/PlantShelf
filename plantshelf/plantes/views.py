@@ -233,17 +233,38 @@ def ajouter_plante(request, piece_id=None):
                     if not espece:
                         # Créer la nouvelle espèce depuis l'API
                         try:
+                            # D'abord essayer d'obtenir les détails complets
                             plant_data = perenual_service.get_plant_details(perenual_id)
                             if plant_data:
                                 espece_data = perenual_service.format_plant_for_model(plant_data)
                                 if espece_data:
                                     espece = EspecePlante.objects.create(**espece_data)
+                                    messages.success(request, f"Nouvelle espèce '{espece.nom_commun}' créée depuis l'API Perenual.")
+                            else:
+                                raise Exception("Données non disponibles")
+                                
                         except Exception as e:
-                            messages.error(request, f"Erreur lors de la récupération des données: {e}")
-                            return render(request, 'plantes/ajouter_plante.html', {
-                                'form': form, 
-                                'piece': piece
-                            })
+                            # Fallback : créer avec des données minimales depuis la recherche
+                            try:
+                                # Récupérer le nom depuis le formulaire
+                                nom_recherche = request.POST.get('nom_plante_cache') or request.POST.get('recherche_espece', '').strip()
+                                if nom_recherche:
+                                    espece_data = {
+                                        'nom_commun': nom_recherche.title(),
+                                        'perenual_id': perenual_id,
+                                        'frequence_arrosage_jours': 7,
+                                        'exposition_preferee': 'indirecte',
+                                    }
+                                    espece = EspecePlante.objects.create(**espece_data)
+                                    messages.warning(request, f"Espèce '{espece.nom_commun}' créée avec des paramètres par défaut (limite API atteinte).")
+                                else:
+                                    raise Exception("Nom de plante non trouvé")
+                            except Exception as e2:
+                                messages.error(request, f"Impossible de créer l'espèce. Erreur: {e2}")
+                                return render(request, 'plantes/ajouter_plante.html', {
+                                    'form': form, 
+                                    'piece': piece
+                                })
             
             if not espece:
                 messages.error(request, "Veuillez sélectionner une espèce valide.")
@@ -264,7 +285,7 @@ def ajouter_plante(request, piece_id=None):
     else:
         initial_data = {}
         if piece:
-            initial_data['piece'] = piece
+            initial_data['piece'] = piece.id  # Passer l'ID, pas l'objet
         form = AjouterPlanteForm(request.user, initial=initial_data)
     
     return render(request, 'plantes/ajouter_plante.html', {

@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ajouter une plante{% if piece %} - {{ piece.nom }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus-circle text-success me-2"></i>
+                        Ajouter une plante
+                        {% if piece %}
+                            <small class="text-muted">dans {{ piece.nom }}</small>
+                        {% endif %}
+                    </h3>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" id="form-ajouter-plante">
+                        {% csrf_token %}
+                        
+                        <!-- Recherche d'espèce avec autocomplete -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">{{ form.recherche_espece.label }}</label>
+                            {{ form.recherche_espece }}
+                            {{ form.espece_selectionnee }}
+                            
+                            <!-- Zone de résultats de recherche -->
+                            <div id="resultats-recherche" class="mt-2 d-none">
+                                <div class="list-group" id="liste-resultats">
+                                    <!-- Les résultats seront ajoutés ici par JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <!-- Affichage de l'espèce sélectionnée -->
+                            <div id="espece-selectionnee-display" class="mt-3 d-none">
+                                <div class="alert alert-success">
+                                    <h6 class="mb-1">Espèce sélectionnée :</h6>
+                                    <div id="espece-info">
+                                        <!-- Infos de l'espèce sélectionnée -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Informations de la plante -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.nom_personnalise.label }}</label>
+                                {{ form.nom_personnalise }}
+                                <small class="form-text text-muted">Donnez un nom unique à votre plante</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.piece.label }}</label>
+                                {{ form.piece }}
+                            </div>
+                        </div>
+                        
+                        <!-- Position dans la bibliothèque -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.etagere_numero.label }}</label>
+                                {{ form.etagere_numero }}
+                                <small class="form-text text-muted">Sur quelle étagère placer la plante ?</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.position_x.label }}</label>
+                                {{ form.position_x }}
+                                <small class="form-text text-muted">Position de gauche à droite (0 = tout à gauche)</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                        </div>
+                        
+                        <!-- Boutons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if piece %}{% url 'bibliotheque_piece' piece.id %}{% else %}{% url 'mes_pieces' %}{% endif %}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Annuler
+                            </a>
+                            
+                            <button type="submit" class="btn btn-success" id="btn-submit" disabled>
+                                <i class="fas fa-plus me-1"></i>Ajouter la plante
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Lien pour créer une espèce manuelle -->
+                    <div class="mt-4 pt-3 border-top">
+                        <p class="text-muted mb-2">Vous ne trouvez pas votre plante ?</p>
+                        <a href="{% url 'creer_espece_manuelle' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus-square me-1"></i>Créer une nouvelle espèce
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles CSS personnalisés -->
+<style>
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.list-group-item.active {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.plant-image {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.source-badge {
+    font-size: 0.7em;
+}
+
+#resultats-recherche {
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>
+
+<!-- JavaScript pour l'autocomplete -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const champRecherche = document.getElementById('recherche-espece');
+    const champSelectionne = document.getElementById('espece-selectionnee');
+    const resultatsDiv = document.getElementById('resultats-recherche');
+    const listeResultats = document.getElementById('liste-resultats');
+    const especeDisplay = document.getElementById('espece-selectionnee-display');
+    const especeInfo = document.getElementById('espece-info');
+    const btnSubmit = document.getElementById('btn-submit');
+    
+    let timeoutId = null;
+    let especeSelectionneeData = null;
+    
+    // Recherche avec délai (debounce)
+    champRecherche.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Annuler la recherche précédente
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+        
+        if (query.length < 2) {
+            masquerResultats();
+            return;
+        }
+        
+        // Délai de 300ms avant la recherche
+        timeoutId = setTimeout(() => {
+            rechercherPlantes(query);
+        }, 300);
+    });
+    
+    function rechercherPlantes(query) {
+        // Afficher un indicateur de chargement
+        listeResultats.innerHTML = '<div class="list-group-item text-center"><i class="fas fa-spinner fa-spin"></i> Recherche en cours...</div>';
+        resultatsDiv.classList.remove('d-none');
+        
+        fetch(`/api/rechercher-plantes/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                afficherResultats(data.results);
+            })
+            .catch(error => {
+                console.error('Erreur lors de la recherche:', error);
+                listeResultats.innerHTML = '<div class="list-group-item text-danger">Erreur lors de la recherche</div>';
+            });
+    }
+    
+    function afficherResultats(resultats) {
+        if (resultats.length === 0) {
+            listeResultats.innerHTML = '<div class="list-group-item text-muted">Aucun résultat trouvé</div>';
+            return;
+        }
+        
+        let html = '';
+        resultats.forEach(plante => {
+            const badgeClass = plante.source === 'local' ? 'bg-primary' : 'bg-info';
+            const badgeText = plante.source === 'local' ? 'Local' : 'API';
+            
+            html += `
+                <div class="list-group-item list-group-item-action" data-plant='${JSON.stringify(plante)}'>
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            ${plante.image ? `<img src="${plante.image}" class="plant-image me-3" alt="">` : '<div class="plant-image me-3 bg-light d-flex align-items-center justify-content-center"><i class="fas fa-leaf text-success"></i></div>'}
+                            <div>
+                                <h6 class="mb-1">${plante.text}</h6>
+                                ${plante.scientific_name ? `<small class="text-muted fst-italic">${plante.scientific_name}</small>` : ''}
+                            </div>
+                        </div>
+                        <span class="badge ${badgeClass} source-badge">${badgeText}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        listeResultats.innerHTML = html;
+        
+        // Ajouter les event listeners sur les résultats
+        document.querySelectorAll('#liste-resultats .list-group-item-action').forEach(item => {
+            item.addEventListener('click', function() {
+                const planteData = JSON.parse(this.dataset.plant);
+                selectionnerEspece(planteData);
+            });
+        });
+    }
+    
+    function selectionnerEspece(plante) {
+        especeSelectionneeData = plante;
+        champSelectionne.value = plante.id;
+        
+        // Mettre à jour l'affichage
+        champRecherche.value = plante.text;
+        
+        // Ajouter un champ caché avec le nom pour le fallback
+        let champNomCache = document.getElementById('nom-plante-cache');
+        if (!champNomCache) {
+            champNomCache = document.createElement('input');
+            champNomCache.type = 'hidden';
+            champNomCache.id = 'nom-plante-cache';
+            champNomCache.name = 'nom_plante_cache';
+            document.getElementById('form-ajouter-plante').appendChild(champNomCache);
+        }
+        champNomCache.value = plante.text;
+        
+        masquerResultats();
+        
+        // Afficher les infos de la plante sélectionnée
+        let infoHtml = `<strong>${plante.text}</strong>`;
+        if (plante.scientific_name) {
+            infoHtml += `<br><small class="text-muted fst-italic">${plante.scientific_name}</small>`;
+        }
+        if (plante.frequence_arrosage) {
+            infoHtml += `<br><small><i class="fas fa-droplet me-1"></i>Arrosage: tous les ${plante.frequence_arrosage} jours</small>`;
+        }
+        if (plante.exposition) {
+            infoHtml += `<br><small><i class="fas fa-sun me-1"></i>${plante.exposition}</small>`;
+        }
+        
+        especeInfo.innerHTML = infoHtml;
+        especeDisplay.classList.remove('d-none');
+        
+        // Activer le bouton de soumission
+        btnSubmit.disabled = false;
+    }
+    
+    function masquerResultats() {
+        resultatsDiv.classList.add('d-none');
+        listeResultats.innerHTML = '';
+    }
+    
+    // Masquer les résultats quand on clique ailleurs
+    document.addEventListener('click', function(e) {
+        if (!champRecherche.contains(e.target) && !resultatsDiv.contains(e.target)) {
+            masquerResultats();
+        }
+    });
+    
+    // Validation du formulaire
+    document.getElementById('form-ajouter-plante').addEventListener('submit', function(e) {
+        if (!champSelectionne.value) {
+            e.preventDefault();
+            alert('Veuillez sélectionner une espèce de plante.');
+            champRecherche.focus();
+        }
+    });
+});
+</script>
+{% endblock %}

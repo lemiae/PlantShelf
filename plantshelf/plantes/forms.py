@@ -208,12 +208,11 @@ class AjouterPlanteForm(forms.ModelForm):
             piece_id = kwargs['initial']['piece']
             try:
                 piece = Piece.objects.get(id=piece_id, user=user)
-                self.fields['piece'].initial = piece
+                self.fields['piece'].initial = piece.id  # Passer l'ID
                 # Limiter le nombre d'étagères selon la pièce
                 self.fields['etagere_numero'].widget.attrs['max'] = piece.nombre_etageres
             except Piece.DoesNotExist:
                 pass
-
 
 class CreerEspeceForm(forms.ModelForm):
     """Formulaire pour créer une nouvelle espèce manuellement"""

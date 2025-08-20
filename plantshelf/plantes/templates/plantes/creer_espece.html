@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Créer une nouvelle espèce{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus-square text-primary me-2"></i>
+                        Créer une nouvelle espèce
+                    </h3>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Créez une nouvelle espèce si vous ne l'avez pas trouvée dans la recherche.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.nom_commun.label }}</label>
+                            {{ form.nom_commun }}
+                            {% if form.nom_commun.help_text %}
+                                <small class="form-text text-muted">{{ form.nom_commun.help_text }}</small>
+                            {% endif %}
+                            {% if form.nom_commun.errors %}
+                                <div class="text-danger">{{ form.nom_commun.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.nom_scientifique.label }}</label>
+                            {{ form.nom_scientifique }}
+                            {% if form.nom_scientifique.help_text %}
+                                <small class="form-text text-muted">{{ form.nom_scientifique.help_text }}</small>
+                            {% endif %}
+                            {% if form.nom_scientifique.errors %}
+                                <div class="text-danger">{{ form.nom_scientifique.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.frequence_arrosage_jours.label }}</label>
+                                {{ form.frequence_arrosage_jours }}
+                                <small class="form-text text-muted">Nombre de jours entre chaque arrosage</small>
+                                {% if form.frequence_arrosage_jours.errors %}
+                                    <div class="text-danger">{{ form.frequence_arrosage_jours.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.exposition_preferee.label }}</label>
+                                {{ form.exposition_preferee }}
+                                {% if form.exposition_preferee.errors %}
+                                    <div class="text-danger">{{ form.exposition_preferee.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Conseils d'entretien -->
+                        <div class="mb-4">
+                            <h6 class="text-muted">💡 Conseils pour bien remplir :</h6>
+                            <ul class="small text-muted">
+                                <li><strong>Fréquence d'arrosage :</strong> 3-5 jours = plantes assoiffées, 7-10 jours = normale, 14+ jours = résistantes</li>
+                                <li><strong>Exposition :</strong> Faible = salle de bain, Indirecte = près d'une fenêtre, Directe = rebord de fenêtre</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'ajouter_plante' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Retour
+                            </a>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Créer l'espèce
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

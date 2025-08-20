@@ -136,6 +136,20 @@ class PerenualService:
             'frequence_arrosage_jours': frequence,
             'exposition_preferee': exposition,
         }
+    
+    def format_plant_from_search(self, plant_data):
+        """Convertit les données de recherche vers le format de notre modèle (sans appel API supplémentaire)"""
+        if not plant_data:
+            return None
+        
+        # Utiliser les données de base de la recherche
+        return {
+            'nom_commun': plant_data.get('common_name', '').title(),
+            'nom_scientifique': plant_data.get('scientific_name', [None])[0] if plant_data.get('scientific_name') else None,
+            'perenual_id': plant_data.get('id'),
+            'frequence_arrosage_jours': 7,  # Valeur par défaut
+            'exposition_preferee': 'indirecte',  # Valeur par défaut
+        }
 
 # Instance globale du service
 perenual_service = PerenualService()
