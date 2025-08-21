@@ -11,6 +11,9 @@ from django.views.decorators.http import require_http_methods
 from .forms import AjouterPlanteForm, CreerEspeceForm
 from .services.perenual_service import perenual_service
 import json
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 
 def home(request):
@@ -132,20 +135,26 @@ def supprimer_piece(request, piece_id):
 
 @login_required
 def bibliotheque_piece(request, piece_id):
-    """Vue bibliothèque d'une pièce spécifique"""
+    """Affiche la bibliothèque d'une pièce avec ses plantes sur les étagères"""
     piece = get_object_or_404(Piece, id=piece_id, user=request.user)
-    plantes = PlantePossedee.objects.filter(piece=piece).select_related('espece')
     
-    # Organiser les plantes par étagère
-    plantes_par_etagere = {}
-    for i in range(1, piece.nombre_etageres + 1):
-        plantes_par_etagere[i] = plantes.filter(etagere_numero=i).order_by('position_x')
+    # Récupérer toutes les plantes de la pièce, triées par étagère et position
+    plantes = PlantePossedee.objects.filter(piece=piece).select_related('espece').order_by('etagere_numero', 'position_x')
     
+    # Créer une liste des numéros d'étagères pour le template
+    etageres_range = list(range(1, piece.nombre_etageres + 1))
+    
+    # Identifier les plantes qui ont besoin d'arrosage
+    plantes_a_arroser = [plante for plante in plantes if plante.a_besoin_arrosage]
+    
+    # Statistiques rapides
     context = {
         'piece': piece,
-        'plantes_par_etagere': plantes_par_etagere,
-        'total_plantes': plantes.count(),
-        'plantes_a_arroser': [p for p in plantes if p.a_besoin_arrosage]
+        'plantes': plantes,
+        'etageres_range': etageres_range,
+        'plantes_a_arroser': plantes_a_arroser,
+        'total_plantes': len(plantes),
+        'nb_etageres': piece.nombre_etageres,
     }
     
     return render(request, 'plantes/bibliotheque_piece.html', context)
@@ -307,3 +316,66 @@ def creer_espece_manuelle(request):
         form = CreerEspeceForm()
     
     return render(request, 'plantes/creer_espece.html', {'form': form})
+
+@login_required
+@require_POST
+def arroser_plante(request, plante_id):
+    """Marque une plante comme arrosée (AJAX)"""
+    plante = get_object_or_404(PlantePossedee, id=plante_id, user=request.user)
+    
+    # Mettre à jour la date d'arrosage
+    plante.derniere_fois_arrosee = timezone.now()
+    plante.save()
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'{plante.nom_affiche} a été arrosée !',
+        'derniere_fois_arrosee': plante.derniere_fois_arrosee.isoformat(),
+        'jours_depuis_arrosage': plante.jours_depuis_arrosage
+    })
+
+
+@login_required
+@require_POST
+def deplacer_plante(request, plante_id):
+    """Déplace une plante à une nouvelle position (AJAX)"""
+    try:
+        plante = get_object_or_404(PlantePossedee, id=plante_id, user=request.user)
+        
+        # Récupérer les données JSON
+        data = json.loads(request.body)
+        nouvelle_etagere = data.get('etagere_numero')
+        nouvelle_position = data.get('position_x')
+        
+        # Validation
+        if not (1 <= nouvelle_etagere <= plante.piece.nombre_etageres):
+            return JsonResponse({
+                'success': False,
+                'error': 'Numéro d\'étagère invalide'
+            })
+        
+        if nouvelle_position < 0:
+            nouvelle_position = 0
+        
+        # Sauvegarder
+        plante.etagere_numero = nouvelle_etagere
+        plante.position_x = nouvelle_position
+        plante.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{plante.nom_affiche} déplacée vers l\'étagère {nouvelle_etagere}',
+            'nouvelle_etagere': nouvelle_etagere,
+            'nouvelle_position': nouvelle_position
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Données JSON invalides'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

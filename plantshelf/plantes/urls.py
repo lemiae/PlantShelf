@@ -31,4 +31,8 @@ urlpatterns = [
     path('ajouter-plante/<int:piece_id>/', views.ajouter_plante, name='ajouter_plante'),
     path('api/rechercher-plantes/', views.api_rechercher_plantes, name='api_rechercher_plantes'),
     path('creer-espece/', views.creer_espece_manuelle, name='creer_espece_manuelle'),
+    path('plante/<int:plante_id>/arroser/', views.arroser_plante, name='arroser_plante'),
+    path('plante/<int:plante_id>/deplacer/', views.deplacer_plante, name='deplacer_plante'),
+
+
 ]

@@ -1,279 +1,756 @@
-<!-- templates/plantes/bibliotheque_piece.html -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ piece.nom }} - Bibliothèque{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="display-6 fw-bold" style="color: var(--plant-green);">
-            <i class="fas fa-book-open me-3"></i>{{ piece.nom }}
-        </h1>
-        <div class="d-flex align-items-center gap-3">
-            <span class="badge bg-secondary fs-6">
-                <i class="fas fa-compass me-1"></i>{{ piece.get_exposition_display }}
-            </span>
-            <span class="text-muted">
-                {{ total_plantes }} plante{{ total_plantes|pluralize }} • {{ piece.nombre_etageres }} étagère{{ piece.nombre_etageres|pluralize }}
-            </span>
-            {% if plantes_a_arroser %}
-            <span class="badge bg-warning text-dark">
-                <i class="fas fa-tint me-1"></i>{{ plantes_a_arroser|length }} à arroser
-            </span>
-            {% endif %}
+<div class="container-fluid mt-4">
+    <!-- Token CSRF pour les requêtes AJAX -->
+    {% csrf_token %}
+    
+    <!-- En-tête de la pièce -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-home text-primary me-2"></i>{{ piece.nom }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {{ piece.get_exposition_display }} • 
+                        {{ piece.nombre_plantes }} plante{{ piece.nombre_plantes|pluralize }} • 
+                        {{ piece.nombre_etageres }} étagère{{ piece.nombre_etageres|pluralize }}
+                    </p>
+                </div>
+                
+                <div>
+                    <a href="{% url 'ajouter_plante' piece.id %}" class="btn btn-success me-2">
+                        <i class="fas fa-plus me-1"></i>Ajouter une plante
+                    </a>
+                    <a href="{% url 'modifier_piece' piece.id %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-edit me-1"></i>Modifier
+                    </a>
+                    <a href="{% url 'mes_pieces' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Mes pièces
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="dropdown">
-        <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            <i class="fas fa-cog me-1"></i>Actions
-        </button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{% url 'ajouter_plante' piece.id %}">
-                <i class="fas fa-plus me-2"></i>Ajouter une plante
-            </a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="{% url 'modifier_piece' piece.id %}">
-                <i class="fas fa-edit me-2"></i>Modifier la pièce
-            </a></li>
-            <li><a class="dropdown-item text-danger" href="{% url 'supprimer_piece' piece.id %}">
-                <i class="fas fa-trash me-2"></i>Supprimer la pièce
-            </a></li>
-        </ul>
-    </div>
-</div>
 
-<!-- Description de la pièce -->
-{% if piece.description %}
-<div class="alert alert-info mb-4">
-    <i class="fas fa-info-circle me-2"></i>{{ piece.description }}
-</div>
-{% endif %}
-
-<!-- Bibliothèque avec étagères -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="bibliotheque-container" style="position: relative; background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%); min-height: 500px; border-radius: 10px;">
-            {% if total_plantes > 0 %}
-                <!-- Étagères avec plantes -->
-                {% for etagere_num, plantes_etagere in plantes_par_etagere.items %}
-                <div class="etagere etagere-{{ etagere_num }}" style="
-                    position: absolute;
-                    width: 85%;
-                    height: 20px;
-                    left: 7.5%;
-                    background: linear-gradient(to bottom, #8B4513, #A0522D);
-                    border-radius: 10px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                "></div>
+    <!-- Filtres et actions rapides -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="d-flex align-items-center gap-3">
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="filtre" id="tous" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="tous">Toutes</label>
+                    
+                    <input type="radio" class="btn-check" name="filtre" id="a-arroser" autocomplete="off">
+                    <label class="btn btn-outline-warning" for="a-arroser">À arroser</label>
+                </div>
                 
-                <!-- Plantes sur cette étagère -->
-                {% for plante in plantes_etagere %}
-                <div class="plante-item plante-etagere-{{ etagere_num }}" 
-                     data-position="{{ plante.position_x }}"
-                     style="position: absolute; cursor: pointer;" 
-                     title="{{ plante.nom_affiche }} - {{ plante.espece.nom_commun }}">
-                    <!-- Pot -->
-                    <div class="pot" style="
-                        width: 40px;
-                        height: 30px;
-                        background: {{ plante.espece.couleur_pot }};
-                        border-radius: 0 0 20px 20px;
-                        position: relative;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                    ">
-                        <!-- Plante -->
-                        <div style="
-                            position: absolute;
-                            top: -15px;
-                            left: 50%;
-                            transform: translateX(-50%);
-                            color: #2e7d32;
-                            font-size: 20px;
-                        ">
-                            <i class="fas fa-seedling"></i>
+                <div class="text-muted">
+                    <i class="fas fa-droplet text-info me-1"></i>
+                    <span id="nb-a-arroser">{{ plantes_a_arroser|length }}</span> plante{{ plantes_a_arroser|length|pluralize }} à arroser
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bibliothèque avec étagères -->
+    <div class="bibliotheque-container">
+        <div class="bibliotheque" data-piece-id="{{ piece.id }}">
+            {% for numero_etagere in etageres_range %}
+                <div class="etagere" data-etagere="{{ numero_etagere }}">
+                    <!-- Planche de l'étagère -->
+                    <div class="planche-etagere">
+                        <div class="planche-surface">
+                            <!-- Zone de drop pour les plantes -->
+                            <div class="zone-plantes" data-etagere="{{ numero_etagere }}">
+                                {% for plante in plantes %}
+                                    {% if plante.etagere_numero == numero_etagere %}
+                                        <div class="plante-item" 
+                                             data-plante-id="{{ plante.id }}" 
+                                             data-etagere="{{ plante.etagere_numero }}" 
+                                             data-position="{{ plante.position_x }}"
+                                             style="left: {{ plante.position_x|floatformat:0 }}px;">
+                                             
+                                            <!-- Pot de la plante -->
+                                            <div class="pot {% if plante.a_besoin_arrosage %}pot-soif{% endif %}">
+                                                {% if plante.espece.image_design %}
+                                                    <img src="{{ plante.espece.image_design.url }}" alt="{{ plante.nom_affiche }}" class="plante-image">
+                                                {% else %}
+                                                    <!-- Design par défaut de plante -->
+                                                    <div class="plante-defaut">
+                                                        <div class="tige"></div>
+                                                        <div class="feuilles">
+                                                            <div class="feuille feuille-1"></div>
+                                                            <div class="feuille feuille-2"></div>
+                                                            <div class="feuille feuille-3"></div>
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                <!-- Indicateur d'arrosage -->
+                                                {% if plante.a_besoin_arrosage %}
+                                                    <div class="indicateur-soif">
+                                                        <i class="fas fa-droplet"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Étiquette de la plante -->
+                                            <div class="etiquette-plante">
+                                                <div class="nom-plante">{{ plante.nom_affiche }}</div>
+                                                <div class="espece-plante">{{ plante.espece.nom_commun }}</div>
+                                                {% if plante.jours_depuis_arrosage > 0 %}
+                                                    <div class="jours-arrosage">{{ plante.jours_depuis_arrosage }}j</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Menu contextuel -->
+                                            <div class="menu-plante">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="voirPlante({{ plante.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% if plante.a_besoin_arrosage %}
+                                                    <button class="btn btn-sm btn-success" onclick="arroserPlante({{ plante.id }})">
+                                                        <i class="fas fa-droplet"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
-                        
-                        <!-- Indicateur d'arrosage -->
-                        {% if plante.a_besoin_arrosage %}
-                        <div style="
-                            position: absolute;
-                            top: -25px;
-                            right: -5px;
-                            background: #ffc107;
-                            color: white;
-                            border-radius: 50%;
-                            width: 15px;
-                            height: 15px;
-                            font-size: 8px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                        ">
-                            <i class="fas fa-tint"></i>
-                        </div>
-                        {% endif %}
                     </div>
                     
-                    <!-- Nom de la plante -->
-                    <div style="
-                        position: absolute;
-                        top: 35px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        white-space: nowrap;
-                        font-size: 10px;
-                        background: rgba(255,255,255,0.8);
-                        padding: 2px 4px;
-                        border-radius: 3px;
-                        max-width: 80px;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    ">
-                        {{ plante.nom_affiche|truncatechars:12 }}
+                    <!-- Support de l'étagère -->
+                    <div class="support-etagere">
+                        <div class="support-gauche"></div>
+                        <div class="support-droit"></div>
                     </div>
+                    
+                    <!-- Numéro d'étagère -->
+                    <div class="numero-etagere">{{ numero_etagere }}</div>
                 </div>
-                {% endfor %}
-                {% endfor %}
-            {% else %}
-                <!-- État vide -->
-                <div class="text-center py-5">
-                    <i class="fas fa-seedling text-muted mb-3" style="font-size: 4rem; opacity: 0.5;"></i>
-                    <h4 class="text-muted mb-3">Bibliothèque vide</h4>
-                    <p class="text-muted mb-4">
-                        Cette pièce ne contient encore aucune plante.<br>
-                        Commencez par ajouter votre première plante !
-                    </p>
-                    <button class="btn btn-plant">
-                        <a href="{% url 'ajouter_plante' piece.id %}"><i class="fas fa-plus me-2"></i>Ajouter ma première plante</a>
-                    </button>
-                </div>
-                
-                <!-- Affichage des étagères vides pour pièce vide -->
-                <div class="etagere-vide etagere-1" style="
-                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 80px;
-                    background: linear-gradient(to bottom, #8B4513, #A0522D);
-                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.2;
-                "></div>
-                {% if piece.nombre_etageres >= 2 %}
-                <div class="etagere-vide etagere-2" style="
-                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 160px;
-                    background: linear-gradient(to bottom, #8B4513, #A0522D);
-                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.2;
-                "></div>
-                {% endif %}
-                {% if piece.nombre_etageres >= 3 %}
-                <div class="etagere-vide etagere-3" style="
-                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 240px;
-                    background: linear-gradient(to bottom, #8B4513, #A0522D);
-                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.2;
-                "></div>
-                {% endif %}
-                {% if piece.nombre_etageres >= 4 %}
-                <div class="etagere-vide etagere-4" style="
-                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 320px;
-                    background: linear-gradient(to bottom, #8B4513, #A0522D);
-                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.2;
-                "></div>
-                {% endif %}
-                {% if piece.nombre_etageres >= 5 %}
-                <div class="etagere-vide etagere-5" style="
-                    position: absolute; width: 85%; height: 20px; left: 7.5%; top: 400px;
-                    background: linear-gradient(to bottom, #8B4513, #A0522D);
-                    border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.2;
-                "></div>
-                {% endif %}
-            {% endif %}
+            {% endfor %}
         </div>
     </div>
+
+    <!-- Zone vide si pas de plantes -->
+    {% if not plantes %}
+        <div class="text-center py-5">
+            <div class="mb-3">
+                <i class="fas fa-seedling text-muted" style="font-size: 4rem;"></i>
+            </div>
+            <h4 class="text-muted">Aucune plante dans cette pièce</h4>
+            <p class="text-muted">Commencez votre collection en ajoutant votre première plante !</p>
+            <a href="{% url 'ajouter_plante' piece.id %}" class="btn btn-success btn-lg">
+                <i class="fas fa-plus me-2"></i>Ajouter ma première plante
+            </a>
+        </div>
+    {% endif %}
 </div>
 
-<div class="position-fixed" style="bottom: 20px; right: 20px; z-index: 1000;">
-    <a href="{% url 'ajouter_plante' piece.id %}" 
-       class="btn btn-success btn-lg rounded-circle shadow"
-       title="Ajouter une plante">
-        <i class="fas fa-plus"></i>
-    </a>
-</div>
+<!-- Bouton flottant pour ajouter une plante -->
+{% if plantes %}
+    <div class="position-fixed" style="bottom: 20px; right: 20px; z-index: 1000;">
+        <a href="{% url 'ajouter_plante' piece.id %}" 
+           class="btn btn-success btn-lg rounded-circle shadow-lg"
+           title="Ajouter une plante">
+            <i class="fas fa-plus"></i>
+        </a>
+    </div>
+{% endif %}
 
+<!-- Styles CSS pour la bibliothèque -->
 <style>
-/* Positionnement fixe des étagères */
-.etagere-1, .plante-etagere-1 { 
-    top: 80px; 
-}
-.plante-etagere-1 { 
-    top: 40px; 
-}
-
-.etagere-2, .plante-etagere-2 { 
-    top: 160px; 
-}
-.plante-etagere-2 { 
-    top: 120px; 
+.bibliotheque-container {
+    background: linear-gradient(to bottom, #e3f2fd 0%, #f5f5f5 100%);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+    min-height: 600px;
 }
 
-.etagere-3, .plante-etagere-3 { 
-    top: 240px; 
-}
-.plante-etagere-3 { 
-    top: 200px; 
-}
-
-.etagere-4, .plante-etagere-4 { 
-    top: 320px; 
-}
-.plante-etagere-4 { 
-    top: 280px; 
+.bibliotheque {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.etagere-5, .plante-etagere-5 { 
-    top: 400px; 
-}
-.plante-etagere-5 { 
-    top: 360px; 
+.etagere {
+    position: relative;
+    height: 180px;
+    margin-bottom: 20px;
+    width: 100%;
 }
 
-/* Positionnement horizontal des plantes */
-.plante-item[data-position="0"] { left: 100px; }
-.plante-item[data-position="1"] { left: 160px; }
-.plante-item[data-position="2"] { left: 220px; }
-.plante-item[data-position="3"] { left: 280px; }
-.plante-item[data-position="4"] { left: 340px; }
-.plante-item[data-position="5"] { left: 400px; }
-.plante-item[data-position="6"] { left: 460px; }
-.plante-item[data-position="7"] { left: 520px; }
-.plante-item[data-position="8"] { left: 580px; }
-.plante-item[data-position="9"] { left: 640px; }
+/* Planche de l'étagère */
+.planche-etagere {
+    position: absolute;
+    bottom: 60px;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, #8d6e63, #6d4c41);
+    border-radius: 3px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
 
-/* Effets hover */
-.plante-item:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s;
+.planche-surface {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+/* Zone où placer les plantes */
+.zone-plantes {
+    position: absolute;
+    top: -120px;
+    left: 20px;
+    right: 20px;
+    height: 140px;
+    min-height: 140px;
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.zone-plantes:hover {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.05);
+}
+
+/* Mode édition */
+.bibliotheque.edit-mode .zone-plantes {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.05);
+}
+
+.bibliotheque.edit-mode .zone-plantes.drag-over {
+    border-color: #ff9800;
+    background: rgba(255, 152, 0, 0.1);
+    border-style: solid;
+    border-width: 3px;
+}
+
+.bibliotheque.edit-mode .plante-item {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.bibliotheque.edit-mode .plante-item:hover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+/* Supports de l'étagère */
+.support-etagere {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+}
+
+.support-gauche, .support-droit {
+    position: absolute;
+    width: 15px;
+    height: 60px;
+    background: linear-gradient(to right, #5d4037, #3e2723);
+    border-radius: 0 0 3px 3px;
+}
+
+.support-gauche { left: 10px; }
+.support-droit { right: 10px; }
+
+/* Numéro d'étagère */
+.numero-etagere {
+    position: absolute;
+    left: -30px;
+    bottom: 30px;
+    width: 20px;
+    height: 20px;
+    background: #ff9800;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Plantes */
+.plante-item {
+    position: absolute;
+    width: 80px;
+    height: 120px;
+    cursor: pointer;
+    transition: all 0.3s ease;
     z-index: 10;
 }
 
-.etagere:hover {
-    transform: translateY(-1px);
-    transition: transform 0.2s;
-}
-</style>
-
-<!-- Navigation -->
-<div class="mt-4">
-    <a href="{% url 'mes_pieces' %}" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Retour aux pièces
-    </a>
-</div>
-
-<style>
 .plante-item:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s;
-    z-index: 10;
+    transform: translateY(-5px) scale(1.05);
+    z-index: 20;
 }
 
-.etagere:hover {
-    transform: translateY(-1px);
-    transition: transform 0.2s;
+.plante-item:hover .menu-plante {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Pot */
+.pot {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 40px;
+    background: linear-gradient(to bottom, #8d6e63, #5d4037);
+    border-radius: 0 0 30px 30px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.pot-soif {
+    animation: soif 2s infinite ease-in-out;
+}
+
+@keyframes soif {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.02); }
+}
+
+/* Design de plante par défaut */
+.plante-defaut {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 80px;
+}
+
+.tige {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 50px;
+    background: linear-gradient(to top, #4caf50, #66bb6a);
+    border-radius: 2px;
+}
+
+.feuilles {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.feuille {
+    position: absolute;
+    width: 25px;
+    height: 15px;
+    background: #4caf50;
+    border-radius: 50% 0;
+    transform-origin: bottom center;
+}
+
+.feuille-1 {
+    top: 0;
+    left: -12px;
+    transform: rotate(-30deg);
+}
+
+.feuille-2 {
+    top: -5px;
+    left: 0;
+    transform: rotate(0deg);
+    background: #66bb6a;
+}
+
+.feuille-3 {
+    top: 0;
+    right: -12px;
+    transform: rotate(30deg);
+}
+
+/* Indicateur d'arrosage */
+.indicateur-soif {
+    position: absolute;
+    top: -15px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    background: #f44336;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Étiquette */
+.etiquette-plante {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 10px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    min-width: 70px;
+    opacity: 0.9;
+}
+
+.nom-plante {
+    font-weight: bold;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.espece-plante {
+    color: #666;
+    font-size: 9px;
+    font-style: italic;
+}
+
+.jours-arrosage {
+    color: #ff9800;
+    font-weight: bold;
+    font-size: 9px;
+}
+
+/* Menu contextuel */
+.menu-plante {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: white;
+    border-radius: 5px;
+    padding: 3px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 30;
+}
+
+.menu-plante .btn {
+    margin: 1px;
+    font-size: 10px;
+    padding: 2px 5px;
+}
+
+/* Filtres */
+.btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.btn-check:checked + .btn-outline-warning {
+    background-color: #ffc107;
+    color: black;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .plante-item {
+        width: 60px;
+        height: 100px;
+    }
+    
+    .pot {
+        width: 45px;
+        height: 30px;
+    }
+    
+    .plante-defaut {
+        width: 40px;
+        height: 60px;
+    }
+    
+    .etiquette-plante {
+        font-size: 8px;
+        padding: 3px 5px;
+        min-width: 50px;
+    }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage des plantes
+    const filtres = document.querySelectorAll('input[name="filtre"]');
+    const plantes = document.querySelectorAll('.plante-item');
+    
+    filtres.forEach(filtre => {
+        filtre.addEventListener('change', function() {
+            const valeur = this.id;
+            
+            plantes.forEach(plante => {
+                if (valeur === 'tous') {
+                    plante.style.display = 'block';
+                } else if (valeur === 'a-arroser') {
+                    const aSoif = plante.querySelector('.pot-soif') !== null;
+                    plante.style.display = aSoif ? 'block' : 'none';
+                }
+            });
+        });
+    });
+    
+    // ============= SYSTÈME DRAG & DROP =============
+    let draggedElement = null;
+    let dragOffset = { x: 0, y: 0 };
+    let isDragging = false;
+    let originalPosition = { x: 0, y: 0, etagere: 0 };
+    
+    // Mode édition
+    let editMode = false;
+    const btnEditMode = document.createElement('button');
+    btnEditMode.className = 'btn btn-outline-secondary btn-sm ms-3';
+    btnEditMode.innerHTML = '<i class="fas fa-edit me-1"></i>Mode édition';
+    btnEditMode.onclick = toggleEditMode;
+    document.querySelector('.d-flex.align-items-center.gap-3').appendChild(btnEditMode);
+    
+    function toggleEditMode() {
+        editMode = !editMode;
+        const bibliotheque = document.querySelector('.bibliotheque');
+        
+        if (editMode) {
+            btnEditMode.innerHTML = '<i class="fas fa-save me-1"></i>Terminer';
+            btnEditMode.className = 'btn btn-success btn-sm ms-3';
+            bibliotheque.classList.add('edit-mode');
+            enableDragAndDrop();
+        } else {
+            btnEditMode.innerHTML = '<i class="fas fa-edit me-1"></i>Mode édition';
+            btnEditMode.className = 'btn btn-outline-secondary btn-sm ms-3';
+            bibliotheque.classList.remove('edit-mode');
+            disableDragAndDrop();
+        }
+    }
+    
+    function enableDragAndDrop() {
+        const plantes = document.querySelectorAll('.plante-item');
+        plantes.forEach(plante => {
+            plante.draggable = true;
+            plante.style.cursor = 'move';
+            plante.addEventListener('dragstart', handleDragStart);
+            plante.addEventListener('dragend', handleDragEnd);
+        });
+        
+        const zones = document.querySelectorAll('.zone-plantes');
+        zones.forEach(zone => {
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('drop', handleDrop);
+            zone.addEventListener('dragenter', handleDragEnter);
+            zone.addEventListener('dragleave', handleDragLeave);
+        });
+    }
+    
+    function disableDragAndDrop() {
+        const plantes = document.querySelectorAll('.plante-item');
+        plantes.forEach(plante => {
+            plante.draggable = false;
+            plante.style.cursor = 'pointer';
+            plante.removeEventListener('dragstart', handleDragStart);
+            plante.removeEventListener('dragend', handleDragEnd);
+        });
+        
+        const zones = document.querySelectorAll('.zone-plantes');
+        zones.forEach(zone => {
+            zone.removeEventListener('dragover', handleDragOver);
+            zone.removeEventListener('drop', handleDrop);
+            zone.removeEventListener('dragenter', handleDragEnter);
+            zone.removeEventListener('dragleave', handleDragLeave);
+            zone.classList.remove('drag-over');
+        });
+    }
+    
+    function handleDragStart(e) {
+        draggedElement = this;
+        isDragging = true;
+        
+        // Stocker la position originale
+        originalPosition.x = parseInt(this.style.left) || 0;
+        originalPosition.etagere = parseInt(this.dataset.etagere);
+        
+        // Style pendant le drag
+        this.style.opacity = '0.5';
+        this.style.transform = 'scale(0.9)';
+        
+        // Données pour le transfer
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.outerHTML);
+    }
+    
+    function handleDragEnd(e) {
+        this.style.opacity = '';
+        this.style.transform = '';
+        isDragging = false;
+        
+        // Nettoyer les styles des zones
+        document.querySelectorAll('.zone-plantes').forEach(zone => {
+            zone.classList.remove('drag-over');
+        });
+    }
+    
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+    
+    function handleDragEnter(e) {
+        this.classList.add('drag-over');
+    }
+    
+    function handleDragLeave(e) {
+        // Vérifier si on quitte vraiment la zone
+        if (!this.contains(e.relatedTarget)) {
+            this.classList.remove('drag-over');
+        }
+    }
+    
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+        
+        this.classList.remove('drag-over');
+        
+        if (draggedElement !== null) {
+            // Calculer la nouvelle position
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const nouvelleEtagere = parseInt(this.dataset.etagere);
+            
+            // Contraindre la position dans les limites
+            const maxX = this.offsetWidth - 80; // largeur de la plante
+            const nouvellePositionX = Math.max(0, Math.min(x - 40, maxX)); // centrer sur le curseur
+            
+            // Déplacer visuellement
+            draggedElement.style.left = nouvellePositionX + 'px';
+            
+            // Si changement d'étagère, déplacer l'élément
+            if (nouvelleEtagere !== originalPosition.etagere) {
+                this.appendChild(draggedElement);
+                draggedElement.dataset.etagere = nouvelleEtagere;
+            }
+            
+            // Sauvegarder en base de données
+            sauvegarderPosition(draggedElement, nouvelleEtagere, nouvellePositionX);
+        }
+        
+        return false;
+    }
+    
+    function sauvegarderPosition(element, etagere, positionX) {
+        const planteId = element.dataset.planteId;
+        
+        // Indicateur de sauvegarde
+        const indicateur = document.createElement('div');
+        indicateur.className = 'position-fixed bg-info text-white px-3 py-1 rounded';
+        indicateur.style.top = '20px';
+        indicateur.style.right = '20px';
+        indicateur.style.zIndex = '9999';
+        indicateur.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sauvegarde...';
+        document.body.appendChild(indicateur);
+        
+        // Appel AJAX
+        fetch(`/plante/${planteId}/deplacer/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                etagere_numero: etagere,
+                position_x: Math.round(positionX)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                indicateur.className = 'position-fixed bg-success text-white px-3 py-1 rounded';
+                indicateur.innerHTML = '<i class="fas fa-check me-1"></i>Sauvegardé !';
+                
+                // Mettre à jour les attributs
+                element.dataset.position = Math.round(positionX);
+            } else {
+                indicateur.className = 'position-fixed bg-danger text-white px-3 py-1 rounded';
+                indicateur.innerHTML = '<i class="fas fa-times me-1"></i>Erreur !';
+                
+                // Revenir à la position originale
+                element.style.left = originalPosition.x + 'px';
+                if (etagere !== originalPosition.etagere) {
+                    const zoneOriginale = document.querySelector(`[data-etagere="${originalPosition.etagere}"]`);
+                    zoneOriginale.appendChild(element);
+                    element.dataset.etagere = originalPosition.etagere;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            indicateur.className = 'position-fixed bg-danger text-white px-3 py-1 rounded';
+            indicateur.innerHTML = '<i class="fas fa-times me-1"></i>Erreur réseau !';
+        })
+        .finally(() => {
+            setTimeout(() => {
+                if (document.body.contains(indicateur)) {
+                    document.body.removeChild(indicateur);
+                }
+            }, 2000);
+        });
+    }
+});
+
+// Fonctions pour les actions sur les plantes
+function voirPlante(planteId) {
+    window.location.href = `/plante/${planteId}/`;
+}
+
+function arroserPlante(planteId) {
+    if (confirm('Marquer cette plante comme arrosée ?')) {
+        // AJAX call pour marquer comme arrosée
+        fetch(`/plante/${planteId}/arroser/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
 {% endblock %}
