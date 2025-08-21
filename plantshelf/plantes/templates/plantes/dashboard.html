@@ -84,33 +84,275 @@
     </div>
 </div>
 
-<!-- Notifications urgentes -->
+<!-- Notifications urgentes avec actions -->
 {% if notifications_urgentes %}
 <div class="row mb-4">
     <div class="col-12">
-        <div class="alert alert-warning">
-            <h5 class="alert-heading">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Plantes à arroser aujourd'hui
-            </h5>
+        <div class="alert alert-warning border-left-warning shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="alert-heading mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Plantes à arroser aujourd'hui
+                    <span class="badge bg-warning text-dark ms-2">{{ notifications_urgentes|length }}</span>
+                </h5>
+                <a href="{% url 'dashboard_notifications' %}" class="btn btn-sm btn-outline-warning">
+                    Voir tout <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
             <div class="row">
                 {% for plante in notifications_urgentes %}
-                <div class="col-md-6 mb-2">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-seedling me-2"></i>
-                        <strong>{{ plante.nom_affiche }}</strong>
-                        <span class="text-muted ms-2">({{ plante.piece.nom }})</span>
-                        <span class="badge bg-warning text-dark ms-auto">
-                            {{ plante.jours_depuis_arrosage }} jour{{ plante.jours_depuis_arrosage|pluralize }}
-                        </span>
+                <div class="col-lg-6 mb-3">
+                    <div class="card border-warning notification-card" data-plante-id="{{ plante.id }}">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <i class="fas fa-seedling text-success me-3 fs-5"></i>
+                                    <div class="flex-grow-1">
+                                        <strong class="d-block">{{ plante.nom_affiche }}</strong>
+                                        <small class="text-muted">
+                                            <i class="fas fa-door-open me-1"></i>{{ plante.piece.nom }}
+                                            {% if plante.derniere_fois_arrosee %}
+                                                • Dernier arrosage: {{ plante.derniere_fois_arrosee|date:"d/m" }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-center">
+                                    <!-- Badge de retard avec votre logique existante -->
+                                    {% with frequence=plante.espece.frequence_arrosage_jours|default:7 %}
+                                    {% if plante.jours_depuis_arrosage >= frequence|add:3 %}
+                                        <span class="badge bg-danger me-2">
+                                            <i class="fas fa-fire"></i> {{ plante.jours_depuis_arrosage }}j
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark me-2">
+                                            <i class="fas fa-clock"></i> {{ plante.jours_depuis_arrosage }}j
+                                        </span>
+                                    {% endif %}
+                                    {% endwith %}
+                                    
+                                    <!-- Bouton d'arrosage -->
+                                    <button class="btn btn-success btn-sm btn-arroser-dashboard" 
+                                            data-plante-id="{{ plante.id }}"
+                                            data-plante-nom="{{ plante.nom_affiche }}"
+                                            title="Marquer comme arrosée">
+                                        <i class="fas fa-tint"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Barre de progression du retard -->
+                            <div class="mt-2">
+                                {% with frequence=plante.espece.frequence_arrosage_jours|default:7 %}
+                                    {% widthratio plante.jours_depuis_arrosage frequence 100 as pourcentage %}
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar 
+                                            {% if pourcentage >= 140 %}bg-danger
+                                            {% elif pourcentage >= 100 %}bg-warning
+                                            {% else %}bg-info
+                                            {% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {% if pourcentage > 100 %}100{% else %}{{ pourcentage }}{% endif %}%">
+                                        </div>
+                                    </div>
+                                {% endwith %}
+                            </div>
+                        </div>
                     </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Actions globales -->
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Conseil: Arrosez de préférence le matin pour une meilleure absorption
+                    </small>
+                    <button class="btn btn-outline-success btn-sm" onclick="marquerToutArrose()">
+                        <i class="fas fa-check-double me-1"></i> Tout arroser
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Section pour les prochains arrosages (nouvelle) -->
+{% elif prochains_arrosages %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info border-left-info">
+            <h6 class="alert-heading mb-2">
+                <i class="fas fa-calendar-alt me-2"></i>
+                Prochains arrosages programmés
+            </h6>
+            <div class="row">
+                {% for plante in prochains_arrosages|slice:":4" %}
+                <div class="col-md-3 mb-1">
+                    <small class="d-flex justify-content-between">
+                        <span><i class="fas fa-seedling me-1"></i>{{ plante.nom_affiche }}</span>
+                        <span class="text-muted">{{ plante.jours_restants }}j</span>
+                    </small>
                 </div>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+{% else %}
+<!-- État "tout va bien" -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-success border-left-success">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle text-success me-3 fs-4"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">Toutes vos plantes sont bien hydratées !</h6>
+                    <small class="text-muted">Aucun arrosage nécessaire aujourd'hui</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
+
+<!-- CSS personnalisé -->
+<style>
+.border-left-warning {
+    border-left: 4px solid #ffc107 !important;
+}
+.border-left-info {
+    border-left: 4px solid #17a2b8 !important;
+}
+.border-left-success {
+    border-left: 4px solid #28a745 !important;
+}
+.notification-card {
+    transition: all 0.3s ease;
+}
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.btn-arroser-dashboard {
+    transition: all 0.2s ease;
+}
+.btn-arroser-dashboard:hover {
+    transform: scale(1.1);
+}
+</style>
+<!-- JavaScript pour les actions -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Arrosage individuel
+    document.querySelectorAll('.btn-arroser-dashboard').forEach(button => {
+        button.addEventListener('click', function() {
+            const planteId = this.dataset.planteId;
+            const planteNom = this.dataset.planteNom;
+            const card = this.closest('.notification-card');
+            
+            arroserPlante(planteId, planteNom, card);
+        });
+    });
+});
+
+function arroserPlante(planteId, planteNom, element) {
+    fetch(`/plantes/arroser/${planteId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Animation de succès
+            element.style.transition = 'all 0.4s ease';
+            element.style.transform = 'scale(0.95)';
+            element.style.opacity = '0.7';
+            element.style.backgroundColor = '#d4edda';
+            
+            setTimeout(() => {
+                element.style.display = 'none';
+                
+                // Vérifier s'il reste des notifications
+                const remaining = document.querySelectorAll('.notification-card:not([style*="display: none"])');
+                if (remaining.length === 0) {
+                    // Recharger pour afficher le message "tout va bien"
+                    location.reload();
+                }
+            }, 400);
+            
+            showToast(`${planteNom} a été arrosée !`, 'success');
+        } else {
+            showToast('Erreur lors de l\'arrosage', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur réseau', 'error');
+    });
+}
+
+function marquerToutArrose() {
+    if (!confirm('Marquer toutes les plantes comme arrosées ?')) return;
+    
+    const buttons = document.querySelectorAll('.btn-arroser-dashboard');
+    let completed = 0;
+    
+    buttons.forEach(button => {
+        const planteId = button.dataset.planteId;
+        const planteNom = button.dataset.planteNom;
+        const card = button.closest('.notification-card');
+        
+        setTimeout(() => {
+            arroserPlante(planteId, planteNom, card);
+            completed++;
+            
+            if (completed === buttons.length) {
+                setTimeout(() => location.reload(), 1000);
+            }
+        }, completed * 200); // Décalage pour un effet de cascade
+    });
+}
+
+function showToast(message, type) {
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1055';
+    document.body.appendChild(container);
+    return container;
+}
+</script>
 
 <!-- Mes pièces récentes -->
 {% if pieces %}
@@ -160,3 +402,198 @@
 </div>
 {% endif %}
 {% endblock %}
+
+<!-- JavaScript à ajouter en bas de votre dashboard.html -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Arrosage individuel depuis le dashboard
+    document.querySelectorAll('.btn-arroser-dashboard').forEach(button => {
+        button.addEventListener('click', function() {
+            const planteId = this.dataset.planteId;
+            const planteNom = this.dataset.planteNom;
+            const card = this.closest('.notification-card');
+            
+            arroserPlanteDashboard(planteId, planteNom, card);
+        });
+    });
+});
+
+function arroserPlanteDashboard(planteId, planteNom, cardElement) {
+    // Utiliser votre URL existante
+    fetch(`/plantes/arroser/${planteId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Animation de succès avec votre message existant
+            cardElement.style.transition = 'all 0.5s ease';
+            cardElement.style.transform = 'scale(0.95) translateX(20px)';
+            cardElement.style.opacity = '0.3';
+            cardElement.style.backgroundColor = '#d4edda';
+            
+            // Ajouter une icône de succès
+            const icon = cardElement.querySelector('.fas.fa-seedling');
+            icon.className = 'fas fa-check-circle text-success';
+            
+            setTimeout(() => {
+                cardElement.style.height = '0';
+                cardElement.style.margin = '0';
+                cardElement.style.padding = '0';
+                cardElement.style.overflow = 'hidden';
+                
+                setTimeout(() => {
+                    cardElement.remove();
+                    
+                    // Vérifier s'il reste des notifications
+                    const remaining = document.querySelectorAll('.notification-card');
+                    if (remaining.length === 0) {
+                        // Recharger pour afficher le message "tout va bien"
+                        setTimeout(() => location.reload(), 500);
+                    } else {
+                        // Mettre à jour le compteur dans le header
+                        updateNotificationBadge(remaining.length);
+                    }
+                }, 500);
+            }, 600);
+            
+            // Utiliser votre message de retour API
+            showDashboardToast(data.message || `${planteNom} a été arrosée !`, 'success');
+        } else {
+            showDashboardToast('Erreur lors de l\'arrosage', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showDashboardToast('Erreur de connexion', 'error');
+    });
+}
+
+function marquerToutArrose() {
+    const buttons = document.querySelectorAll('.btn-arroser-dashboard');
+    
+    if (buttons.length === 0) {
+        showDashboardToast('Aucune plante à arroser !', 'info');
+        return;
+    }
+    
+    if (!confirm(`Marquer toutes les ${buttons.length} plantes comme arrosées ?`)) {
+        return;
+    }
+    
+    let completed = 0;
+    const total = buttons.length;
+    
+    // Désactiver tous les boutons pendant le processus
+    buttons.forEach(btn => btn.disabled = true);
+    
+    buttons.forEach((button, index) => {
+        const planteId = button.dataset.planteId;
+        const planteNom = button.dataset.planteNom;
+        const card = button.closest('.notification-card');
+        
+        // Décalage de 300ms entre chaque arrosage pour un effet de cascade
+        setTimeout(() => {
+            arroserPlanteDashboard(planteId, planteNom, card);
+            completed++;
+            
+            // Quand tout est terminé, recharger la page
+            if (completed === total) {
+                setTimeout(() => {
+                    showDashboardToast(`${total} plante${total > 1 ? 's' : ''} arrosée${total > 1 ? 's' : ''} !`, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                }, 1000);
+            }
+        }, index * 300);
+    });
+}
+
+function updateNotificationBadge(newCount) {
+    // Mettre à jour le badge dans la navigation si présent
+    const badge = document.querySelector('.nav-link .badge, .navbar .badge');
+    if (badge) {
+        if (newCount > 0) {
+            badge.textContent = newCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    // Mettre à jour le header de la section notifications
+    const alertHeading = document.querySelector('.alert-warning .alert-heading .badge');
+    if (alertHeading) {
+        alertHeading.textContent = newCount;
+    }
+}
+
+function showDashboardToast(message, type) {
+    // Réutiliser votre système de toast existant ou créer un simple
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show`;
+    toast.style.cssText = 'position: relative; margin-bottom: 10px; animation: slideIn 0.3s ease;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove après 4 secondes
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 4000);
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1055; max-width: 350px;';
+    document.body.appendChild(container);
+    return container;
+}
+</script>
+
+<style>
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+.notification-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #ffc107;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-arroser-dashboard {
+    transition: all 0.2s ease;
+}
+
+.btn-arroser-dashboard:hover:not(:disabled) {
+    transform: scale(1.1);
+}
+
+.btn-arroser-dashboard:disabled {
+    opacity: 0.5;
+}
+</style>

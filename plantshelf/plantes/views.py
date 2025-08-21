@@ -45,19 +45,56 @@ def register_view(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard principal"""
+    """Dashboard principal - Version enrichie"""
     pieces = Piece.objects.filter(user=request.user)
+    toutes_plantes = PlantePossedee.objects.filter(user=request.user).select_related('espece', 'piece')
     
-    # Statistiques rapides
-    total_plantes = PlantePossedee.objects.filter(user=request.user).count()
-    plantes_a_arroser = [p for p in PlantePossedee.objects.filter(user=request.user) if p.a_besoin_arrosage]
+    # Statistiques rapides (votre logique existante)
+    total_plantes = toutes_plantes.count()
+    plantes_a_arroser = [p for p in toutes_plantes if p.a_besoin_arrosage]
+    
+    # Enrichissements pour les nouvelles fonctionnalités
+    # Calculer les prochains arrosages (plantes qui vont bientôt avoir besoin)
+    prochains_arrosages = []
+    plantes_critiques = 0
+    
+    for plante in toutes_plantes:
+        if not plante.a_besoin_arrosage:
+            # Vérifier si c'est bientôt (dans les 2 prochains jours)
+            jours_depuis = plante.jours_depuis_arrosage
+            frequence = getattr(plante.espece, 'frequence_arrosage_jours', 7) or 7
+            jours_restants = frequence - jours_depuis
+            
+            if 0 <= jours_restants <= 2:  # Dans les 2 prochains jours
+                plante.jours_restants = jours_restants
+                prochains_arrosages.append(plante)
+        else:
+            # Compter les critiques (très en retard)
+            jours_depuis = plante.jours_depuis_arrosage  
+            frequence = getattr(plante.espece, 'frequence_arrosage_jours', 7) or 7
+            if jours_depuis >= frequence + 3:  # Plus de 3 jours de retard
+                plantes_critiques += 1
+    
+    # Trier les prochains arrosages par urgence
+    prochains_arrosages.sort(key=lambda p: p.jours_restants)
+    
+    # Trier les plantes à arroser par urgence (plus en retard d'abord)  
+    plantes_a_arroser_triees = sorted(plantes_a_arroser, 
+                                     key=lambda p: p.jours_depuis_arrosage, 
+                                     reverse=True)
     
     context = {
+        # Vos données existantes
         'pieces': pieces,
         'total_plantes': total_plantes,
         'nombre_pieces': pieces.count(),
         'plantes_a_arroser': len(plantes_a_arroser),
-        'notifications_urgentes': plantes_a_arroser[:5]  # Les 5 plus urgentes
+        'notifications_urgentes': plantes_a_arroser_triees[:5],  # Les 5 plus urgentes, triées
+        
+        # Nouvelles données pour les améliorations
+        'prochains_arrosages': prochains_arrosages[:6],  # Les 6 prochaines
+        'nb_critiques': plantes_critiques,
+        'plantes_a_arroser_toutes': plantes_a_arroser_triees,  # Pour "tout arroser"
     }
     
     return render(request, 'plantes/dashboard.html', context)
